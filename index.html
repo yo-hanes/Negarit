@@ -1,0 +1,2341 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Negarit Command - Portal Login</title>
+  
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Space Grotesk"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              green: '#22c55e',      // Crisp official emergency green
+              greenDark: '#15803d',
+              greenLight: '#86efac',
+              yellow: '#f59e0b',     // Warning yellow
+              yellowDark: '#b45309',
+              red: '#ef4444',        // Crimson red
+              redDark: '#b91c1c',
+              slateBg: '#0f172a',    // Ultra-clean dark charcoal
+              slateCard: '#1e293b',  // Premium card surface
+            }
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'pulse-fast': 'pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'ping-slow': 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #020617;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+      border: 2px solid #020617;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+    
+    body {
+      background-color: #020617;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(34, 197, 94, 0.05) 0px, transparent 50%),
+        radial-gradient(at 50% 0%, rgba(239, 68, 68, 0.03) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(245, 158, 11, 0.04) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    .glass {
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .glass-premium {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    /* Style overrides to integrate Leaflet natively into dark mode dashboard */
+    .leaflet-container {
+      background: #070b13 !important;
+      font-family: inherit !important;
+    }
+    .leaflet-bar {
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+      border-radius: 8px !important;
+      overflow: hidden;
+    }
+    .leaflet-bar a {
+      background-color: rgba(15, 23, 42, 0.85) !important;
+      color: #f1f5f9 !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+      transition: all 0.2s;
+    }
+    .leaflet-bar a:hover {
+      background-color: #1e293b !important;
+      color: #22c55e !important;
+    }
+    
+    /* Custom pulsing marker designs in Leaflet */
+    .custom-leaflet-marker {
+      background: none !important;
+      border: none !important;
+    }
+  </style>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <!-- React & Babel CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="h-full font-sans antialiased text-slate-200 overflow-x-hidden">
+  <div id="root" class="h-full"></div>
+
+  <!-- React App Logic -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // High fidelity SVG Icons representing Lucide Specs
+    const Icons = {
+      Map: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6.75V15m-12 .75h18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 0 13.5 2.25H15c1.03 0 1.9.693 2.166 1.638m-7.377 17.11a9.75 9.75 0 1 1 12.03-3.036M15 12h-.008v.008H15V12Zm0 3h-.008v.008H15V15Zm-3-3h-.008v.008H12V12Zm0 3h-.008v.008H12V15Zm-3-3h-.008v.008H9V12Zm0 3h-.008v.008H9V15Z" />
+        </svg>
+      ),
+      Analytics: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+        </svg>
+      ),
+      Alert: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+        </svg>
+      ),
+      Settings: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.43l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 0 1 0-.255c.007-.378-.138-.75-.43-.991l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      ),
+      Rain: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 21v-1.5M12 22.5V21M15.75 21v-1.5M8.25 18v-1.5M12 19.5V18M15.75 18v-1.5" />
+        </svg>
+      ),
+      Soil: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5M3.75 5.25h16.5m-16.5 13.5h16.5" />
+        </svg>
+      ),
+      Seismic: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 12h.008v.008H6.75V12Zm3 0h.008v.008H9.75V12Zm3 0h.008v.008H12.75V12Zm3 0h.008v.008H15.75V12Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.886 5.636a9 9 0 0 0 0 12.728M7.537 8.288a5.25 5.25 0 0 0 0 7.424" />
+        </svg>
+      ),
+      Plus: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+      ),
+      Trash: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.166m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+        </svg>
+      ),
+      Info: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 111.086 1.086L12.5 15.75A.75.75 0 0112 18a2.25 2.25 0 01-2.25-2.25c0-1.18.91-2.164 2.09-2.201a51.964 51.964 0 00-3.32 0" />
+          <circle cx="12" cy="12" r="9" />
+        </svg>
+      ),
+      Send: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+        </svg>
+      ),
+      Shield: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+        </svg>
+      ),
+      User: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+        </svg>
+      ),
+      ChevronRight: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      ),
+      Lock: ({ className = "w-4 h-4", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+        </svg>
+      ),
+      Close: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      ),
+      Logout: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+        </svg>
+      )
+    };
+
+    function App() {
+      // Authentication States
+      const [isLoggedIn, setIsLoggedIn] = useState(false);
+      const [userRole, setUserRole] = useState('Visitor'); // Default role
+      const [loginEmail, setLoginEmail] = useState('operator@negarit.gov.et');
+      const [loginPassword, setLoginPassword] = useState('••••••••');
+
+      // Dashboard View State
+      const [currentTab, setCurrentTab] = useState('map');
+      
+      // Page 1: Map States
+      const [selectedPin, setSelectedPin] = useState(null);
+      const [mapLayers, setMapLayers] = useState({
+        heatmap: true,
+        contours: true,
+        grid: true
+      });
+
+      // Page 3: Alert Approvals States
+      const [activeSmsState, setActiveSmsState] = useState('critical'); 
+      const [activeLanguage, setActiveLanguage] = useState('en'); 
+      
+      // Strict crisis control templates (strictly uneditable by user request)
+      const smsTexts = {
+       
+        critical: {
+    en: `🚨 NEGARIT CRITICAL ALERT: Low-lying areas in East Shewa, Adama must evacuate immediately to higher ground due to severe flooding risk. Call emergency services if trapped.
+
+Quick Tips:
+1. Shut off utilities.
+2. Avoid walking in moving water.
+3. Don't drive in floodwaters.
+4. Take ID and essential medication.
+5. Seek high ground.`,
+
+    om: `🚨 AKEESSACHIISA CIMAA NEGARIT: Lolaa cimaa mudachuu danda'uun kan ka'e, Adaamaatti naannolee dakaa jiran dafanii akka gadi lakkisan ajajameera. Yoo bishaaniin marfamtan tajaajila yeroo muddamaa naannoo keessanii bilbilaa.
+
+Tarkaanfiiwwan Saffisaa:
+1. Tajaajilawwan addaan kutaa.
+2. Bishaan socho'aa keessa deemuu irraa of qussadhaa.
+3. Bishaan lolaa keessa hin oofinaa.
+4. Waraqaa eenyummaa fi qoricha barbaachisaa fudhadhaa.
+5. Bakka ol'aanaa barbaadaa.`,
+
+    am: `🚨 የነጋሪት አስቸኳይ ማስጠንቀቂያ፡ በምስራቅ ሸዋ አዳማ በከባድ የጎርፍ መጥለቅለቅ አደጋ ምክንያት ዝቅተኛ ቦታዎች ላይ የሚገኙ ነዋሪዎች በአስቸኳይ እንዲለቁ ታዟል። በውሃ ከተከበቡ ለአደጋ ጊዜ አገልግሎት ይደውሉ።
+
+ፈጣን ምክሮች፡
+1. የመገልገያ አገልግሎቶችን ያጥፉ።
+2. በሚንቀሳቀስ ውሃ ውስጥ ከመራመድ ይቆጠቡ።
+3. በጎርፍ ውሃ ውስጥ አይነዱ።
+4. መታወቂያ እና አስፈላጊ መድሃኒቶችን ይያዙ።
+5. ከፍተኛ ቦታዎችን ይፈልጉ።`
+  }
+      };
+
+      const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+      const [broadcastStep, setBroadcastStep] = useState(0);
+      const [isBroadcastComplete, setIsBroadcastComplete] = useState(false);
+      
+      // Page 4: User Configurations
+      const roleDescriptions = {
+        'Super Admin': 'Full master clearance across all configurations and gateway options.',
+        'Admin': 'Full authorization rights over localized regional SMS alerts.',
+        'Technical Team': 'Complete access to threshold slider bars and ingestion tools, but no broadcast rights.',
+        'Normal User': 'Can flag public reports and escalate data packages up the chain.',
+        'Visitor': 'Read-only permissions across all logs; configuration sliders are grayed out.'
+      };
+
+      const [users, setUsers] = useState([
+        { id: 1, name: 'Official_East_Shewa', woreda: 'East Shewa (Adama)', role: 'Admin', desc: roleDescriptions['Admin'] },
+        { id: 2, name: 'Operator_Tech_Gamo', woreda: 'Gamo Zone Highlands', role: 'Technical Team', desc: roleDescriptions['Technical Team'] },
+        { id: 3, name: 'Normal_User_Desk', woreda: 'Afar Region', role: 'Normal User', desc: roleDescriptions['Normal User'] },
+        { id: 4, name: 'Master_Command', woreda: 'National Center', role: 'Super Admin', desc: roleDescriptions['Super Admin'] },
+        { id: 5, name: 'Visitor_Observer', woreda: 'Observer Desk', role: 'Visitor', desc: roleDescriptions['Visitor'] }
+      ]);
+
+      const [newUserName, setNewUserName] = useState('');
+      const [newUserWoreda, setNewUserWoreda] = useState('East Shewa (Adama)');
+      const [newUserRole, setNewUserRole] = useState('Normal User');
+
+      // Sliders thresholds
+      const [aiConfidenceThreshold, setAiConfidenceThreshold] = useState(85);
+      const [minCrowdReports, setMinCrowdReports] = useState(10);
+
+      // Notification badge count
+      const [pendingApprovalsCount, setPendingApprovalsCount] = useState(2);
+
+      // Access controls
+      const hasBroadcastPermission = userRole === 'Super Admin' || userRole === 'Admin';
+      const hasThresholdSliderPermission = userRole === 'Super Admin' || userRole === 'Technical Team';
+
+      // Leaflet references
+      const mapInstanceRef = useRef(null);
+      const adamaPolygonRef = useRef(null);
+      const gamoPolygonRef = useRef(null);
+      const contoursListRef = useRef([]);
+      const adamaMarkerRef = useRef(null);
+      const gamoMarkerRef = useRef(null);
+
+      // We use a mutable ref for the selection handler to bypass stale closures in Leaflet events
+      const handlePinClickRef = useRef(null);
+      handlePinClickRef.current = (pinId) => {
+        setSelectedPin(prev => prev === pinId ? null : pinId);
+      };
+
+      // Map pin click handler (from React UI)
+      const handlePinClick = (pinId) => {
+        setSelectedPin(selectedPin === pinId ? null : pinId);
+      };
+
+      // Leaflet map initialization
+      useEffect(() => {
+        if (isLoggedIn && !mapInstanceRef.current) {
+          // Wrap in a tiny timeout to ensure map container div is fully mounted in the DOM
+          setTimeout(() => {
+            const mapContainer = document.getElementById('leaflet-map');
+            if (!mapContainer) return;
+
+            // Initialize map view centered in Ethiopia Rift Valley (near Adama/Gamo)
+            const map = L.map('leaflet-map', {
+              zoomControl: true,
+              attributionControl: false
+            }).setView([7.6, 38.8], 7);
+
+            // Add premium CartoDB Dark Matter tile layer
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+              maxZoom: 20
+            }).addTo(map);
+
+            // Add attribution
+            L.control.attribution({ position: 'bottomleft' }).addTo(map);
+
+            mapInstanceRef.current = map;
+
+            // Coordinates
+            const adamaCoords = [8.5414, 39.2689];
+            const gamoCoords = [6.0206, 37.5582];
+            const semeraCoords = [11.7930, 41.0058];
+            const hawassaCoords = [7.0504, 38.4956];
+            const jigjigaCoords = [9.3500, 42.8000];
+            const dasenechCoords = [4.7833, 35.4333];
+
+            // 1. Plot georeferenced flood zone hazard polygon (Adama)
+            const adamaPolygonCoords = [
+              [8.58, 39.21],
+              [8.63, 39.28],
+              [8.56, 39.34],
+              [8.48, 39.32],
+              [8.47, 39.24]
+            ];
+            const adamaPolygon = L.polygon(adamaPolygonCoords, {
+              color: '#ef4444',
+              weight: 2,
+              fillColor: '#ef4444',
+              fillOpacity: 0.18
+            }).addTo(map);
+            adamaPolygonRef.current = adamaPolygon;
+
+            // 2. Plot georeferenced landslide Highlands zone hazard polygon (Gamo Zone - dashed yellow)
+            const gamoPolygonCoords = [
+              [6.15, 37.45],
+              [6.18, 37.62],
+              [5.95, 37.66],
+              [5.88, 37.52],
+              [5.98, 37.42]
+            ];
+            const gamoPolygon = L.polygon(gamoPolygonCoords, {
+              color: '#f59e0b',
+              weight: 2,
+              dashArray: '6, 6',
+              fillColor: '#f59e0b',
+              fillOpacity: 0.12
+            }).addTo(map);
+            gamoPolygonRef.current = gamoPolygon;
+// SEMERA POLYGON
+const semeraPolygonCoords = [
+  [11.90, 40.92],
+  [11.95, 41.08],
+  [11.78, 41.12],
+  [11.70, 40.98]
+];
+
+const semeraPolygon = L.polygon(semeraPolygonCoords, {
+  color: '#ef4444',
+  weight: 2,
+  fillColor: '#ef4444',
+  fillOpacity: 0.18
+}).addTo(map);
+
+// HAWASSA POLYGON
+const hawassaPolygonCoords = [
+  [7.12, 38.42],
+  [7.15, 38.56],
+  [6.98, 38.58],
+  [6.95, 38.44]
+];
+
+const hawassaPolygon = L.polygon(hawassaPolygonCoords, {
+  color: '#f59e0b',
+  weight: 2,
+  dashArray: '6,6',
+  fillColor: '#f59e0b',
+  fillOpacity: 0.12
+}).addTo(map);
+
+// JIGJIGA POLYGON
+const jigjigaPolygonCoords = [
+  [9.45, 42.65],
+  [9.48, 42.88],
+  [9.28, 42.96],
+  [9.18, 42.74]
+];
+
+const jigjigaPolygon = L.polygon(jigjigaPolygonCoords, {
+  color: '#ef4444',
+  weight: 2,
+  fillColor: '#ef4444',
+  fillOpacity: 0.18
+}).addTo(map);
+
+// DASENECH POLYGON
+const dasenechPolygonCoords = [
+  [4.90, 35.28],
+  [4.98, 35.55],
+  [4.70, 35.62],
+  [4.62, 35.35]
+];
+
+const dasenechPolygon = L.polygon(dasenechPolygonCoords, {
+  color: '#ef4444',
+  weight: 2,
+  fillColor: '#ef4444',
+  fillOpacity: 0.18
+}).addTo(map);
+
+            // 3. Plot elevation contour lines simulation
+            const contours = [
+              [[9.1, 38.0], [9.25, 38.4], [8.95, 38.8], [8.75, 38.3]],
+              [[8.85, 38.2], [8.95, 38.4], [8.75, 38.6], [8.65, 38.4]],
+              [[6.25, 37.1], [6.35, 37.4], [6.05, 37.7], [5.85, 37.4]]
+            ];
+            contoursListRef.current = contours.map(c => 
+              L.polyline(c, { color: '#1e293b', weight: 1.2, opacity: 0.45 })
+            );
+            contoursListRef.current.forEach(layer => map.addLayer(layer));
+
+            // Custom glowing marker div icons
+            const createDivIcon = (label, colorClass) => {
+              return L.divIcon({
+                className: 'custom-leaflet-marker',
+                html: `
+                  <div class="flex flex-col items-center select-none cursor-pointer">
+                    <div class="relative">
+                      <span class="absolute -inset-1.5 rounded-full bg-${colorClass === 'brand-red' ? 'red-500' : 'yellow-500'} opacity-75 animate-ping-slow"></span>
+                      <div class="w-8 h-8 rounded-full bg-slate-950 border-2 border-${colorClass === 'brand-red' ? 'red-500' : 'yellow-500'} flex items-center justify-center shadow-lg shadow-black/85 relative z-10">
+                        <span class="text-[9px] font-extrabold text-white tracking-tighter uppercase">${label}</span>
+                      </div>
+                    </div>
+                    <div class="mt-1 px-1.5 py-0.5 rounded bg-slate-950/90 border border-slate-800/80 text-[8px] font-bold tracking-wider text-slate-300 shadow-md">
+                     ${
+  label === 'AD' ? 'ADAMA' :
+  label === 'GM' ? 'GAMO' :
+  label === 'SM' ? 'SEMERA' :
+  label === 'HW' ? 'HAWASSA' :
+  label === 'JG' ? 'JIGJIGA' :
+  label === 'DS' ? 'DASENECH' :
+  'ZONE'
+}
+                    </div>
+                  </div>
+                `,
+                iconSize: [40, 50],
+                iconAnchor: [20, 40]
+              });
+            };
+
+            // Set marker pins
+            const adamaMarker = L.marker(adamaCoords, {
+              icon: createDivIcon('AD', 'brand-red')
+            }).addTo(map);
+            adamaMarker.on('click', () => {
+              if (handlePinClickRef.current) handlePinClickRef.current('adama');
+            });
+            adamaMarkerRef.current = adamaMarker;
+
+            const gamoMarker = L.marker(gamoCoords, {
+              icon: createDivIcon('GM', 'brand-yellow')
+            }).addTo(map);
+            gamoMarker.on('click', () => {
+              if (handlePinClickRef.current) handlePinClickRef.current('gamo');
+            });
+            gamoMarkerRef.current = gamoMarker;
+
+            // Semera Marker
+const semeraMarker = L.marker(semeraCoords, {
+  icon: createDivIcon('SM', 'brand-red')
+}).addTo(map);
+
+semeraMarker.on('click', () => {
+  if (handlePinClickRef.current)
+    handlePinClickRef.current('semera');
+});
+
+// Hawassa Marker
+const hawassaMarker = L.marker(hawassaCoords, {
+  icon: createDivIcon('HW', 'brand-yellow')
+}).addTo(map);
+
+hawassaMarker.on('click', () => {
+  if (handlePinClickRef.current)
+    handlePinClickRef.current('hawassa');
+});
+
+// Jigjiga Marker
+const jigjigaMarker = L.marker(jigjigaCoords, {
+  icon: createDivIcon('JG', 'brand-red')
+}).addTo(map);
+
+jigjigaMarker.on('click', () => {
+  if (handlePinClickRef.current)
+    handlePinClickRef.current('jigjiga');
+});
+
+// Dasenech Marker
+const dasenechMarker = L.marker(dasenechCoords, {
+  icon: createDivIcon('DS', 'brand-red')
+}).addTo(map);
+
+dasenechMarker.on('click', () => {
+  if (handlePinClickRef.current)
+    handlePinClickRef.current('dasenech');
+});
+
+          }, 150);
+        }
+      }, [isLoggedIn]);
+
+      // Synchronize tab visibility to Leaflet map resizing
+      useEffect(() => {
+        if (currentTab === 'map' && mapInstanceRef.current) {
+          setTimeout(() => {
+            mapInstanceRef.current.invalidateSize();
+          }, 100);
+        }
+      }, [currentTab]);
+
+      // Fly to selection view transitions
+      useEffect(() => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+
+       if (selectedPin === 'adama') {
+  map.flyTo([8.5414, 39.2689], 9.5, { duration: 1.2 });
+
+} else if (selectedPin === 'gamo') {
+  map.flyTo([6.0206, 37.5582], 9.5, { duration: 1.2 });
+
+} else if (selectedPin === 'semera') {
+  map.flyTo([11.7930, 41.0058], 9.5, { duration: 1.2 });
+
+} else if (selectedPin === 'hawassa') {
+  map.flyTo([7.0504, 38.4956], 9.5, { duration: 1.2 });
+
+} else if (selectedPin === 'jigjiga') {
+  map.flyTo([9.3500, 42.8000], 9.5, { duration: 1.2 });
+
+} else if (selectedPin === 'dasenech') {
+  map.flyTo([4.7833, 35.4333], 9.5, { duration: 1.2 });
+
+} else {
+  map.flyTo([7.6, 38.8], 7, { duration: 1.2 });
+}
+      }, [selectedPin]);
+
+      // Sync layer toggles (Heatmaps)
+      useEffect(() => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+
+        if (mapLayers.heatmap) {
+          if (adamaPolygonRef.current) map.addLayer(adamaPolygonRef.current);
+          if (gamoPolygonRef.current) map.addLayer(gamoPolygonRef.current);
+          if (semeraPolygonRef.current)map.addLayer(semeraPolygonRef.current);
+
+if (hawassaPolygonRef.current)
+  map.addLayer(hawassaPolygonRef.current);
+
+if (jigjigaPolygonRef.current)
+  map.addLayer(jigjigaPolygonRef.current);
+
+if (dasenechPolygonRef.current)
+  map.addLayer(dasenechPolygonRef.current);
+        } 
+        
+        else {
+          if (adamaPolygonRef.current) map.removeLayer(adamaPolygonRef.current);
+          if (gamoPolygonRef.current) map.removeLayer(gamoPolygonRef.current);
+          
+        }
+      }, [mapLayers.heatmap]);
+
+      // Sync layer toggles (Contours)
+      useEffect(() => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+
+        if (mapLayers.contours) {
+          contoursListRef.current.forEach(layer => map.addLayer(layer));
+        } else {
+          contoursListRef.current.forEach(layer => map.removeLayer(layer));
+        }
+      }, [mapLayers.contours]);
+
+      // Authorize SMS Broadcast simulation pipeline
+      const handleAuthorizeBroadcast = () => {
+        if (!hasBroadcastPermission) return; 
+        setShowBroadcastModal(true);
+        setBroadcastStep(0);
+        setIsBroadcastComplete(false);
+      };
+
+      useEffect(() => {
+        if (!showBroadcastModal) return;
+
+        const interval = setInterval(() => {
+          setBroadcastStep(prev => {
+            if (prev >= 3) {
+              clearInterval(interval);
+              setIsBroadcastComplete(true);
+              setPendingApprovalsCount(0); 
+              return 3;
+            }
+            return prev + 1;
+          });
+        }, 1200);
+
+        return () => clearInterval(interval);
+      }, [showBroadcastModal]);
+
+      // Add user configuration handler
+      const handleAddUser = (e) => {
+        e.preventDefault();
+        if (!newUserName.trim()) return;
+        
+        const newUser = {
+          id: Date.now(),
+          name: newUserName.trim(),
+          woreda: newUserWoreda,
+          role: newUserRole,
+          desc: roleDescriptions[newUserRole]
+        };
+        
+        setUsers(prev => [...prev, newUser]);
+        setNewUserName('');
+      };
+
+      // Delete user configuration handler
+      const handleDeleteUser = (id) => {
+        setUsers(prev => prev.filter(u => u.id !== id));
+      };
+
+      // Login handler
+      const handleLoginSubmit = (e) => {
+        e.preventDefault();
+        setIsLoggedIn(true);
+      };
+
+      // Logout handler
+      const handleLogout = () => {
+        setIsLoggedIn(false);
+        setSelectedPin(null);
+        mapInstanceRef.current = null; // Reset map instance
+      };
+
+      // ==================== RENDERING LOGIN PORTAL IF NOT LOGGED IN ====================
+      if (!isLoggedIn) {
+        return (
+          <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden font-sans">
+            
+            {/* Grid & Glowing background effects */}
+            <div className="absolute inset-0 bg-[#020712] overflow-hidden flex items-center justify-center pointer-events-none">
+              <svg className="absolute inset-0 w-full h-full text-slate-900/60" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                <rect width="100%" height="100%" fill="url(#grid)" />
+              </svg>
+            </div>
+
+            <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 rounded-2xl overflow-hidden glass-premium border border-slate-800/80 shadow-2xl relative z-10">
+              
+              {/* Left Column: Command Telemetry Status printout */}
+              <div className="hidden md:flex bg-slate-950/90 p-8 flex-col justify-between border-r border-slate-900 relative">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+    <img 
+      src="img/logo.png" 
+      alt="Negarit Gateway Logo" 
+      className="h-160 w-auto object-contain" // Adjust h-8 (32px) to match your logo's aspect ratio
+    />
+  </div>
+                  
+                 
+                </div>
+
+                <div className="space-y-4">
+                  <div className="p-3.5 bg-slate-900/40 rounded-xl border border-slate-900/80 text-xs text-slate-500 leading-normal">
+                    Negarit Command system feeds real-time satellite radar and ground sensor coordinates directly into localized, geofenced telecom warning gateways.
+                  </div>
+                  <div className="text-[10px] text-slate-600 font-semibold uppercase tracking-wider">
+                    Negarit • Crisis Center Portal
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Portal Login Card Form */}
+              <div className="p-8 flex flex-col justify-center bg-slate-900/40">
+                <div className="space-y-2 mb-6">
+                  <h3 className="font-display font-extrabold text-2xl text-white">Sign In</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Provide credentials and select your systemic operator role.
+                  </p>
+                </div>
+
+                <form onSubmit={handleLoginSubmit} className="space-y-4">
+                  {/* Username */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Username / Email</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      className="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:border-brand-green focus:ring-1 focus:ring-brand-green text-xs font-semibold focus:outline-none transition-colors"
+                      placeholder="operator@negarit.gov.et"
+                    />
+                  </div>
+
+                  {/* Password */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Password</label>
+                    <input 
+                      type="password" 
+                      required
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:border-brand-green focus:ring-1 focus:ring-brand-green text-xs font-semibold focus:outline-none transition-colors"
+                      placeholder="Enter password token"
+                    />
+                  </div>
+
+                  {/* Role Selector Dropdown */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Select your Role</label>
+                    <select 
+                      value={userRole}
+                      onChange={(e) => setUserRole(e.target.value)}
+                      className="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:border-brand-green focus:ring-1 focus:ring-brand-green text-xs font-bold focus:outline-none transition-colors cursor-pointer"
+                    >
+                      <option value="Super Admin">Super Admin </option>
+                      <option value="Admin">Admin</option>
+                      <option value="Technical Team">Technical Team</option>
+          
+                      <option value="Visitor">Visitor</option>
+                    </select>
+                  </div>
+
+                  {/* Submit Button */}
+                  <button 
+                    type="submit"
+                    className="w-full bg-brand-green hover:bg-brand-greenDark text-slate-950 font-extrabold py-3.5 rounded-xl transition-all duration-300 shadow-lg shadow-brand-green/10 text-xs tracking-wider uppercase border border-brand-greenLight/10 mt-6"
+                  >
+                    log in
+                  </button>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        );
+      }
+
+      // ==================== MAIN DASHBOARD LAYOUT (AUTHENTICATED STATE) ====================
+      return (
+        <div className="flex min-h-screen bg-brand-slateBg text-slate-100 font-sans">
+          
+          {/* FIXED LEFT SIDEBAR */}
+          <aside className="fixed inset-y-0 left-0 w-80 bg-slate-950/95 border-r border-slate-800/80 flex flex-col justify-between backdrop-blur-xl z-20">
+            <div>
+              {/* Branding Block */}
+              <div className="p-6 border-b border-slate-800/80">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-brand-green/20 flex items-center justify-center border border-brand-green/50 animate-pulse-slow">
+                    <span className="text-xl">N</span>
+                  </div>
+                  <div>
+                    <h1 className="font-display font-bold text-lg tracking-wider text-white">NEGARIT</h1>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="w-2 h-2 rounded-full bg-brand-green animate-pulse-fast"></span>
+                      <span className="text-[10px] font-bold text-brand-green uppercase tracking-widest">Active session</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Logged in User Profile Info */}
+                <div className="mt-4 p-3 rounded-lg bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-400">
+                      <Icons.User className="w-4 h-4 text-slate-300" />
+                    </div>
+                    <div className="overflow-hidden">
+                      <h4 className="text-[11px] font-bold text-slate-200 truncate">{loginEmail.split('@')[0]}</h4>
+                      <p className="text-[9px] text-slate-400 font-semibold capitalize tracking-wide truncate">{userRole}</p>
+                    </div>
+                  </div>
+                  <span className="w-2 h-2 rounded-full bg-brand-green"></span>
+                </div>
+              </div>
+
+              {/* Navigation Menu */}
+              <nav className="p-4 space-y-1.5">
+                <button
+                  onClick={() => setCurrentTab('map')}
+                  className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl font-medium transition-all duration-300 ${
+                    currentTab === 'map'
+                      ? 'bg-gradient-to-r from-brand-green/20 to-slate-900 text-white border border-brand-green/30 shadow-lg shadow-brand-green/5'
+                      : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200 border border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icons.Map className={`w-5 h-5 ${currentTab === 'map' ? 'text-brand-green' : 'text-slate-400'}`} />
+                    <span className="text-sm font-semibold tracking-wide">Interactive Risk Map</span>
+                  </div>
+                  <Icons.ChevronRight className={`w-4 h-4 transition-transform ${currentTab === 'map' ? 'rotate-90 text-brand-green' : 'text-slate-600'}`} />
+                </button>
+
+                <button
+                  onClick={() => setCurrentTab('analytics')}
+                  className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl font-medium transition-all duration-300 ${
+                    currentTab === 'analytics'
+                      ? 'bg-gradient-to-r from-brand-green/20 to-slate-900 text-white border border-brand-green/30 shadow-lg shadow-brand-green/5'
+                      : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200 border border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icons.Analytics className={`w-5 h-5 ${currentTab === 'analytics' ? 'text-brand-green' : 'text-slate-400'}`} />
+                    <span className="text-sm font-semibold tracking-wide">Analytics Dashboard</span>
+                  </div>
+                  <Icons.ChevronRight className={`w-4 h-4 transition-transform ${currentTab === 'analytics' ? 'rotate-90 text-brand-green' : 'text-slate-600'}`} />
+                </button>
+
+                <button
+                  onClick={() => setCurrentTab('alerts')}
+                  className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl font-medium transition-all duration-300 ${
+                    currentTab === 'alerts'
+                      ? 'bg-gradient-to-r from-brand-green/20 to-slate-900 text-white border border-brand-green/30 shadow-lg shadow-brand-green/5'
+                      : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200 border border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Icons.Alert className={`w-5 h-5 ${currentTab === 'alerts' ? 'text-brand-green' : 'text-slate-400'}`} />
+                      {pendingApprovalsCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-brand-red text-[9px] font-extrabold text-white rounded-full flex items-center justify-center border border-slate-950 animate-pulse-fast">
+                          {pendingApprovalsCount}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-sm font-semibold tracking-wide">Alert Approvals</span>
+                  </div>
+                  <Icons.ChevronRight className={`w-4 h-4 transition-transform ${currentTab === 'alerts' ? 'rotate-90 text-brand-green' : 'text-slate-600'}`} />
+                </button>
+
+                <button
+                  onClick={() => setCurrentTab('configs')}
+                  className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl font-medium transition-all duration-300 ${
+                    currentTab === 'configs'
+                      ? 'bg-gradient-to-r from-brand-green/20 to-slate-900 text-white border border-brand-green/30 shadow-lg shadow-brand-green/5'
+                      : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200 border border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icons.Settings className={`w-5 h-5 ${currentTab === 'configs' ? 'text-brand-green' : 'text-slate-400'}`} />
+                    <span className="text-sm font-semibold tracking-wide">System Configurations</span>
+                  </div>
+                  <Icons.ChevronRight className={`w-4 h-4 transition-transform ${currentTab === 'configs' ? 'rotate-90 text-brand-green' : 'text-slate-600'}`} />
+                </button>
+              </nav>
+            </div>
+
+            {/* Sidebar Bottom Actions */}
+            <div className="p-6 border-t border-slate-800/80 bg-slate-950/50 space-y-4">
+              <button 
+                onClick={handleLogout}
+                className="w-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-bold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2 group cursor-pointer"
+              >
+                <Icons.Logout className="w-4 h-4 text-slate-400 group-hover:text-brand-red transition-colors" />
+                <span>Logout / Switch Profile</span>
+              </button>
+
+              <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest">System Telemetry</div>
+              <div className="space-y-2.5">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400">Database Stream</span>
+                  <span className="flex items-center gap-1.5 font-bold text-brand-green">
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-green"></span>
+                    ONLINE
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400">SMS Api</span>
+                  <span className="flex items-center gap-1.5 font-bold text-brand-green">
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-green"></span>
+                    READY
+                  </span>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* MAIN CONTENT VIEWPORT */}
+          <main className="flex-1 pl-80 min-h-screen flex flex-col">
+            
+            {/* Header Area */}
+            <header className="sticky top-0 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-8 py-5 flex justify-between items-center z-10">
+              <div>
+                <span className="text-xs font-bold text-brand-green uppercase tracking-widest">Negarit Command Core</span>
+                <h2 className="font-display font-bold text-2xl text-white mt-0.5 font-semibold">
+                  {currentTab === 'map' && "Disaster Risk Mapping"}
+                  {currentTab === 'analytics' && "Analytics Dashboard"}
+                  {currentTab === 'alerts' && "SMS Broadcast Authorization"}
+                  {currentTab === 'configs' && "System Configuration"}
+                </h2>
+              </div>
+
+              {/* Global Indicators */}
+              <div className="flex items-center gap-4">
+                <div className="glass px-3.5 py-1.5 rounded-lg flex items-center gap-2 border border-slate-800">
+                  <span className="w-2.5 h-2.5 rounded-full bg-brand-red animate-pulse-fast"></span>
+                  <span className="text-xs font-semibold text-slate-300">1 Active Critical Threat (Adama)</span>
+                </div>
+                <div className="glass px-3.5 py-1.5 rounded-lg flex items-center gap-2 border border-slate-800">
+                  <span className="w-2.5 h-2.5 rounded-full bg-brand-yellow"></span>
+                  <span className="text-xs font-semibold text-slate-300">1 Advisory Alert (Gamo)</span>
+                </div>
+              </div>
+            </header>
+
+            {/* Content Switcher */}
+            <div className="p-8 flex-1 flex flex-col">
+                  
+              {/* ==================== PAGE 1: INTERACTIVE RISK MAP (LEAFLET REAL MAP) ==================== */}
+              {/* Note: We keep this block mounted in DOM but hide it so Leaflet's instance is preserved */}
+              <div className={`flex-1 flex flex-col lg:flex-row gap-6 relative ${currentTab === 'map' ? '' : 'hidden'}`}>
+                
+                {/* Left Column: Leaflet Live Map Container */}
+                <div className="flex-1 glass-premium rounded-2xl overflow-hidden relative min-h-[550px] border border-slate-800 flex flex-col justify-end">
+                  
+                  {/* Leaflet instance element */}
+                  <div id="leaflet-map" className="absolute inset-0 w-full h-full z-0"></div>
+
+                  {/* OVERLAID MAP LAYER CONTROL PANEL (Left Bottom) */}
+                  <div className="absolute bottom-6 left-6 glass px-5 py-4 rounded-xl border border-slate-800/80 max-w-xs space-y-3 z-10">
+                    <h3 className="font-display font-bold text-sm tracking-wider text-white flex items-center gap-2">
+                      <span>🎛️</span> Map Layer Overlays
+                    </h3>
+                    <div className="space-y-2.5">
+                      <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
+                        <span>Hazard Risk Heatmaps</span>
+                        <input 
+                          type="checkbox" 
+                          checked={mapLayers.heatmap} 
+                          onChange={(e) => setMapLayers({...mapLayers, heatmap: e.target.checked})}
+                          className="w-4 h-4 rounded border-slate-800 bg-slate-900 text-brand-green focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                        />
+                      </label>
+                      <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
+                        <span>Elevation Contours</span>
+                        <input 
+                          type="checkbox" 
+                          checked={mapLayers.contours} 
+                          onChange={(e) => setMapLayers({...mapLayers, contours: e.target.checked})}
+                          className="w-4 h-4 rounded border-slate-800 bg-slate-900 text-brand-green focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* DISTINCT VISUAL LEGEND BOX (Bottom Right) */}
+                  <div className="absolute bottom-6 right-6 glass px-5 py-4 rounded-xl border border-slate-800/80 w-52 space-y-3 z-10">
+                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-800/60 pb-1.5">Map Legend</h4>
+                    <div className="space-y-2 text-xs">
+                     
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-brand-yellow shrink-0"></span>
+                        <span className="text-slate-300">Advisory Watch</span>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-brand-red shrink-0"></span>
+                        <span className="text-slate-300">Critical Hazard Zone</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Right Column / Popover Panel: detailed telemetry stream cross-validation */}
+                <div className="w-full lg:w-96 flex flex-col gap-6">
+                  
+                  {/* Instructions panel if no pin is selected */}
+                  {!selectedPin ? (
+                     <div className="flex-1 glass-premium rounded-2xl p-8 border border-slate-800 flex flex-col justify-center items-center text-center space-y-4">
+    <div className="w-16 h-16 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-2xl">
+      🗺️
+    </div>
+    <div>
+      <h3 className="font-display font-bold text-lg text-white">
+        GIS Threat Interface
+      </h3>
+      <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+        Click on any of the active georeferenced markers or colored hazard zones on the Leaflet map to load real-time cross-validation telemetry.
+      </p>
+    </div>
+  </div>
+                  ) : (
+                   
+                  
+   
+(() => {
+
+  const telemetryData = {
+    adama: {
+      severity: 'critical',
+      label: 'IMMINENT HAZARD ZONE',
+      title: 'Adama Woreda',
+      region: 'East Shewa, Oromia Region',
+      trust: 'HIGH TRUST (94%)',
+      reportCount: '14 matching entries',
+      reportText: 'Received via USSD gateway (*444#)',
+      reportWidth: '80%',
+      weather: '120mm/hr Rainfall',
+      weatherText: 'Precipitation sensors and radar cross-validation',
+      weatherWidth: '92%',
+      geo: '35° terrain slope',
+      geoText: 'Clay-rich soil, slope instability saturation warning',
+      geoWidth: '85%',
+      action: 'Authorize broadcast immediately via Alert Approvals panel.'
+    },
+
+    gamo: {
+      severity: 'advisory',
+      label: 'ADVISORY WATCH',
+      title: 'Gamo Zone Highlands',
+      region: 'South Ethiopia Regional State',
+      trust: 'MODERATE TRUST (78%)',
+      reportCount: '6 verified reports',
+      reportText: 'Received from community SMS',
+      reportWidth: '60%',
+      weather: 'Sustained high-altitude downpour',
+      weatherText: 'Mountain rainfall tracking',
+      weatherWidth: '84%',
+      geo: '35° terrain slope',
+      geoText: 'Slope saturation warning',
+      geoWidth: '90%',
+      action: 'Await threshold trigger.'
+    },
+
+    semera: {
+      severity: 'critical',
+      label: 'IMMINENT HAZARD ZONE',
+      title: 'Semera-Logia Perimeter',
+      region: 'Afar Region',
+      trust: 'HIGH TRUST (91%)',
+      reportCount: '22 emergency reports',
+      reportText: 'Received via emergency gateway',
+      reportWidth: '88%',
+      weather: 'Extreme heat + flood risk',
+      weatherText: 'Satellite heat monitoring',
+      weatherWidth: '75%',
+      geo: 'River overflow risk',
+      geoText: 'Dry river channel overflow',
+      geoWidth: '95%',
+      action: 'Authorize emergency broadcast immediately.'
+    },
+
+    hawassa: {
+      severity: 'advisory',
+      label: 'ADVISORY WATCH',
+      title: 'Hawassa Basin Grid',
+      region: 'Sidama Region',
+      trust: 'HIGH TRUST (96%)',
+      reportCount: '40 monitoring reports',
+      reportText: 'Environmental monitoring system',
+      reportWidth: '95%',
+      weather: 'Lake rainfall increase',
+      weatherText: 'Weather station validation',
+      weatherWidth: '89%',
+      geo: 'Lake level increase',
+      geoText: 'Water basin monitoring',
+      geoWidth: '92%',
+      action: 'Continue monitoring conditions.'
+    },
+
+    jigjiga: {
+      severity: 'critical',
+      label: 'IMMINENT HAZARD ZONE',
+      title: 'Jigjiga Settlement Zone',
+      region: 'Somali Region',
+      trust: 'MODERATE TRUST (83%)',
+      reportCount: '18 incident reports',
+      reportText: 'Emergency voice reports',
+      reportWidth: '70%',
+      weather: 'Heavy seasonal rainfall',
+      weatherText: 'Flood pattern monitoring',
+      weatherWidth: '94%',
+      geo: 'Low absorption soil',
+      geoText: 'Flash flood acceleration risk',
+      geoWidth: '88%',
+      action: 'Authorize emergency response.'
+    },
+
+    dasenech: {
+      severity: 'critical',
+      label: 'IMMINENT HAZARD ZONE',
+      title: 'Dasenech Woreda',
+      region: 'Lower Omo Valley',
+      trust: 'HIGH TRUST (97%)',
+      reportCount: '31 regional alerts',
+      reportText: 'River overflow warning',
+      reportWidth: '92%',
+      weather: 'Upstream rainfall surge',
+      weatherText: 'Hydrological monitoring',
+      weatherWidth: '98%',
+      geo: 'Floodplain saturation',
+      geoText: 'Groundwater overload',
+      geoWidth: '96%',
+      action: 'Immediate evacuation advisory.'
+    }
+  };
+
+  const currentData =
+    telemetryData[selectedPin] || telemetryData.adama;
+
+  const isCritical =
+    currentData.severity === 'critical';
+
+  return (
+    <div className="glass-premium rounded-2xl p-6 border border-slate-800 space-y-6 animate-fadeIn">
+
+      {/* Header Details */}
+      <div className="flex justify-between items-start">
+        <div>
+          <span
+            className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded border ${
+              isCritical
+                ? 'bg-brand-red/10 border-brand-red text-brand-red'
+                : 'bg-brand-yellow/10 border-brand-yellow text-brand-yellow'
+            }`}
+          >
+            {currentData.label}
+          </span>
+
+          <h3 className="font-display font-bold text-xl text-white mt-2 font-semibold">
+            {currentData.title}
+          </h3>
+
+          <p className="text-xs text-slate-400 mt-0.5">
+            {currentData.region}
+          </p>
+        </div>
+
+        <button
+          onClick={() => setSelectedPin(null)}
+          className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white cursor-pointer"
+        >
+          <Icons.Close className="w-4.5 h-4.5" />
+        </button>
+      </div>
+
+      {/* Trust Level Box */}
+      <div className="p-4 rounded-xl bg-slate-950 border border-slate-850 space-y-4">
+
+        <div className="flex justify-between items-center pb-2.5 border-b border-slate-900">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Trust Level Indicators
+          </h4>
+
+          <span className="text-[10px] font-mono text-brand-green bg-brand-green/10 px-2 py-0.5 rounded border border-brand-green/30">
+            {currentData.trust}
+          </span>
+        </div>
+
+        <div className="space-y-3">
+
+          {/* Report Volume */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs font-semibold text-slate-300">
+              <span>Report Volume</span>
+              <span className="text-slate-400">
+                {currentData.reportCount}
+              </span>
+            </div>
+
+            <div className="text-[11px] text-slate-500 font-medium">
+              {currentData.reportText}
+            </div>
+
+            <div className="w-full h-1.5 rounded-full bg-slate-900 overflow-hidden">
+              <div
+                className="h-full bg-brand-green rounded-full"
+                style={{ width: currentData.reportWidth }}
+              />
+            </div>
+          </div>
+
+          {/* Weather */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs font-semibold text-slate-300">
+              <span>Weather Stream</span>
+              <span className="text-slate-400">
+                {currentData.weather}
+              </span>
+            </div>
+
+            <div className="text-[11px] text-slate-500 font-medium">
+              {currentData.weatherText}
+            </div>
+
+            <div className="w-full h-1.5 rounded-full bg-slate-900 overflow-hidden">
+              <div
+                className="h-full bg-brand-green rounded-full"
+                style={{ width: currentData.weatherWidth }}
+              />
+            </div>
+          </div>
+
+          {/* Geological */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs font-semibold text-slate-300">
+              <span>Geological Parameters</span>
+              <span className="text-slate-400">
+                {currentData.geo}
+              </span>
+            </div>
+
+            <div className="text-[11px] text-slate-500 font-medium">
+              {currentData.geoText}
+            </div>
+
+            <div className="w-full h-1.5 rounded-full bg-slate-900 overflow-hidden">
+              <div
+                className="h-full bg-brand-green rounded-full"
+                style={{ width: currentData.geoWidth }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Summary Details */}
+      <div className="space-y-2">
+        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+          Recommended Actions
+        </h4>
+
+        <ul className="text-xs text-slate-300 space-y-2">
+          <li className="flex items-start gap-2 bg-slate-900/50 p-2.5 rounded-lg border border-slate-800">
+            <span className="text-brand-green">✓</span>
+            <span>
+              Cross-validation pipeline complete (
+              {currentData.trust}).
+            </span>
+          </li>
+
+          <li
+            className={`flex items-start gap-2 p-2.5 rounded-lg border font-semibold ${
+              isCritical
+                ? 'bg-brand-red/10 border-brand-red/30 text-brand-red'
+                : 'bg-brand-yellow/10 border-brand-yellow/30 text-brand-yellow'
+            }`}
+          >
+            <span>⚠️</span>
+            <span>{currentData.action}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+    );
+          })()
+
+
+             )}
+                
+                
+                
+
+
+                </div>
+              </div>
+
+
+              {/* ==================== PAGE 2: ANALYTICS DASHBOARD ==================== */}
+              {currentTab === 'analytics' && (
+                <div className="space-y-8 flex-1 flex flex-col">
+                  
+                  {/* Cards for key live metrics */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Metric 1: Rain Gauges */}
+                    <div className="glass-premium p-6 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-slate-700/80 transition-all duration-300">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-brand-red/5 rounded-bl-full pointer-events-none transition-transform group-hover:scale-105"></div>
+                      <div className="flex justify-between items-start">
+                        <div className="w-12 h-12 rounded-xl bg-brand-red/10 border border-brand-red/30 flex items-center justify-center text-brand-red">
+                          <Icons.Rain className="w-6 h-6" />
+                        </div>
+                        <span className="text-[10px] font-bold text-brand-red bg-brand-red/10 border border-brand-red/30 px-2 py-0.5 rounded">
+                          CRITICAL SPIKE
+                        </span>
+                      </div>
+                      <div className="mt-4">
+                        <span className="text-3xl font-display font-extrabold text-white">120</span>
+                        <span className="text-xs text-slate-400 ml-1 font-semibold">mm/hr</span>
+                        <h4 className="text-sm font-semibold text-slate-300 mt-1.5">Rainfall Intensity (Adama)</h4>
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                          Gauge measurements in Adama Woreda have spiked past the 80mm/hr critical threshold.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Metric 2: Soil Saturation */}
+                    <div className="glass-premium p-6 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-slate-700/80 transition-all duration-300">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-brand-yellow/5 rounded-bl-full pointer-events-none transition-transform group-hover:scale-105"></div>
+                      <div className="flex justify-between items-start">
+                        <div className="w-12 h-12 rounded-xl bg-brand-yellow/10 border border-brand-yellow/30 flex items-center justify-center text-brand-yellow">
+                          <Icons.Soil className="w-6 h-6" />
+                        </div>
+                        <span className="text-[10px] font-bold text-brand-yellow bg-brand-yellow/10 border border-brand-yellow/30 px-2 py-0.5 rounded">
+                          WARNING SLIP
+                        </span>
+                      </div>
+                      <div className="mt-4">
+                        <span className="text-3xl font-display font-extrabold text-white">91</span>
+                        <span className="text-xs text-slate-400 ml-1 font-semibold">% Capacity</span>
+                        <h4 className="text-sm font-semibold text-slate-300 mt-1.5">Soil Water Saturation (Gamo)</h4>
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                          Slope stability in Gamo Zone is at risk due to clay soil liquid limit saturation levels.
+                        </p>
+                      </div>
+                    </div>
+
+                <div className="glass-premium p-6 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-slate-700/80 transition-all duration-300">
+  <div className="absolute top-0 right-0 w-24 h-24 bg-brand-yellow/5 rounded-bl-full pointer-events-none transition-transform group-hover:scale-105"></div>
+  <div className="flex justify-between items-start">
+    <div className="w-12 h-12 rounded-xl bg-brand-yellow/10 border border-brand-yellow/30 flex items-center justify-center text-brand-yellow">
+      <Icons.Soil className="w-6 h-6" />
+    </div>
+     <span className="text-[10px] font-bold text-brand-green bg-brand-green/10 border border-brand-green/30 px-2 py-0.5 rounded">
+                          STABLE BASELINE
+                        </span>
+  </div>
+  <div className="mt-4">
+    <span className="text-3xl font-display font-extrabold text-white">60</span>
+    <span className="text-xs text-slate-400 ml-1 font-semibold">% Capacity</span>
+    <h4 className="text-sm font-semibold text-slate-300 mt-1.5">Soil Water Saturation (dasenech)</h4>
+    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+      Slope stability in dasenechs at risk due to loam soil liquid limit saturation levels.
+    </p>
+  </div>
+</div>
+
+ <div className="glass-premium p-6 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-slate-700/80 transition-all duration-300">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-brand-yellow/5 rounded-bl-full pointer-events-none transition-transform group-hover:scale-105"></div>
+                      <div className="flex justify-between items-start">
+                        <div className="w-12 h-12 rounded-xl bg-brand-green/10 border border-brand-green/30 flex items-center justify-center text-brand-green">
+                          <Icons.Seismic className="w-6 h-6" />
+                        </div>
+                        <span className="text-[10px] font-bold text-brand-green bg-brand-green/10 border border-brand-green/30 px-2 py-0.5 rounded">
+                          STABLE BASELINE
+                        </span>
+                      </div>
+                      <div className="mt-4">
+                        <span className="text-3xl font-display font-extrabold text-white">2.8</span>
+                        <span className="text-xs text-slate-400 ml-1 font-semibold">Richter</span>
+                        <h4 className="text-sm font-semibold text-slate-300 mt-1.5">Adama Rift Tectonic Sensors</h4>
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                          No significant anomalies detected in seismic streams. Active tectonic zones are currently within normal thresholds.
+                        </p>
+                      </div>
+                    </div>
+
+
+ <div className="glass-premium p-6 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-slate-700/80 transition-all duration-300">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-brand-yellow/5 rounded-bl-full pointer-events-none transition-transform group-hover:scale-105"></div>
+                      <div className="flex justify-between items-start">
+                         <div className="w-12 h-12 rounded-xl bg-brand-red/10 border border-brand-red/30 flex items-center justify-center text-brand-red">
+                          <Icons.Rain className="w-6 h-6" />
+                        </div>
+                         <span className="text-[10px] font-bold text-brand-yellow bg-brand-yellow/10 border border-brand-yellow/30 px-2 py-0.5 rounded">
+                          WARNING SLIP
+                        </span>
+                      </div>
+                      <div className="mt-4">
+                        <span className="text-3xl font-display font-extrabold text-white">70</span>
+                        <span className="text-xs text-slate-400 ml-1 font-semibold">mm/hr</span>
+                        <h4 className="text-sm font-semibold text-slate-300 mt-1.5">Rainfall Intensity (Gamo)</h4>
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                          Gauge measurements in Gamo Zone have sgetting closer to 80mm/hr critical threshold.
+                        </p>
+                      </div>
+                    </div>
+
+
+
+
+                    {/* Metric 3: Seismic Sensors */}
+                    <div className="glass-premium p-6 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-slate-700/80 transition-all duration-300">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-brand-green/5 rounded-bl-full pointer-events-none transition-transform group-hover:scale-105"></div>
+                      <div className="flex justify-between items-start">
+                        <div className="w-12 h-12 rounded-xl bg-brand-green/10 border border-brand-green/30 flex items-center justify-center text-brand-green">
+                          <Icons.Seismic className="w-6 h-6" />
+                        </div>
+                        <span className="text-[10px] font-bold text-brand-green bg-brand-green/10 border border-brand-green/30 px-2 py-0.5 rounded">
+                          STABLE BASELINE
+                        </span>
+                      </div>
+                      <div className="mt-4">
+                        <span className="text-3xl font-display font-extrabold text-white">2.4</span>
+                        <span className="text-xs text-slate-400 ml-1 font-semibold">Richter</span>
+                        <h4 className="text-sm font-semibold text-slate-300 mt-1.5">Afar Rift Tectonic Sensors</h4>
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                          No significant anomalies detected in seismic streams. Active tectonic zones are currently within normal thresholds.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+
+
+
+                  {/* Charts Row */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1">
+                    
+                   
+<div className="flex flex-col w-full">
+  {/* Bar chart mockup */}
+  <div className="flex-1 flex items-end justify-between h-64 border border-slate-800 rounded-lg bg-slate-950/40 pl-4 pr-4 pb-2 relative mt-6 mb-4">
+    {/* Grid lines */}
+    <div className="absolute inset-y-0 left-4 right-0 flex flex-col justify-between pointer-events-none">
+      <div className="border-t border-slate-800/40 w-full h-0"></div>
+      <div className="border-t border-slate-800/40 w-full h-0"></div>
+      <div className="border-t border-slate-800/40 w-full h-0"></div>
+      <div className="border-t border-slate-800/40 w-full h-0"></div>
+    </div>
+
+    {/* Generated Bars */}
+    {[
+     { time: 'Jun 1', val: 50, level: 'warning' },
+{ time: 'Jun 2', val: 18, level: 'normal' },
+{ time: 'Jun 3', val: 110, level: 'critical' },
+{ time: 'Jun 4', val: 12, level: 'normal' },
+{ time: 'Jun 5', val: 85, level: 'warning' },
+{ time: 'Jun 6', val: 28, level: 'normal' },
+{ time: 'Jun 7', val: 15, level: 'normal' },
+{ time: 'Jun 8', val: 100, level: 'critical' },
+{ time: 'Jun 9', val: 25, level: 'normal' },
+{ time: 'Jun 10', val: 35, level: 'normal' },
+    ].map((b, idx) => (
+      <div key={idx} className="flex flex-col items-center flex-1 h-full justify-end group relative z-10 cursor-pointer">
+        {/* Value tooltip */}
+        <div className="absolute bottom-full mb-1.5 scale-0 group-hover:scale-100 transition-all duration-200 z-30 pointer-events-none">
+          <div className="bg-slate-950 border border-slate-800 text-[10px] font-bold px-2 py-1 rounded shadow-xl text-white whitespace-nowrap">
+            {b.val} mm/hr
+          </div>
+        </div>
+        
+        {/* Bar Graphic */}
+        <div 
+          className={`w-5 sm:w-7 rounded-t-sm transition-all duration-500 ${
+            b.level === 'critical' 
+              ? 'bg-gradient-to-t from-red-700 to-red-500' 
+              : b.level === 'warning' 
+              ? 'bg-gradient-to-t from-amber-600 to-amber-400'
+              : 'bg-gradient-to-t from-slate-800 to-slate-600'
+          } group-hover:brightness-125`}
+          style={{ height: `${(b.val / 130) * 100}%` }}
+        ></div>
+        
+        {/* X-Axis Time Label */}
+        <span className="text-[9px] text-slate-500 font-mono mt-1 rotate-45 md:rotate-0 whitespace-nowrap">
+          {b.time}
+        </span>
+      </div>
+    ))}
+  </div>
+
+  {/* New Legend Section Added Below */}
+  <div className="flex flex-wrap items-center justify-center gap-6 p-3 rounded-lg border border-slate-900 bg-slate-950/20 w-full mb-2">
+    {/* Normal */}
+    <div className="flex items-center gap-2">
+      <div className="w-4 h-4 rounded bg-gradient-to-t from-slate-800 to-slate-600 border border-slate-700/50"></div>
+      <span className="text-xs font-medium text-slate-400">Normal (&lt; 50 mm/hr)</span>
+    </div>
+
+    {/* Warning */}
+    <div className="flex items-center gap-2">
+      <div className="w-4 h-4 rounded bg-gradient-to-t from-amber-600 to-amber-400 border border-amber-500/30"></div>
+      <span className="text-xs font-medium text-slate-400">Warning (50–99 mm/hr)</span>
+    </div>
+
+    {/* Critical */}
+    <div className="flex items-center gap-2">
+      <div className="w-4 h-4 rounded bg-gradient-to-t from-red-700 to-red-500 border border-red-500/30"></div>
+      <span className="text-xs font-medium text-slate-400">Critical (&ge; 100 mm/hr)</span>
+    </div>
+  </div>
+</div>
+
+             
+
+      {/* CHART 2: Topographic Slide Index comparisons across zones */}
+                    <div className="glass-premium p-6 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-display font-bold text-base text-white">Topographic Landslide Susceptibility Index</h3>
+                        <p className="text-xs text-slate-400">Comparing active highlands zones water weight saturation vs terrain slopes</p>
+                      </div>
+
+                      <div className="space-y-4 my-6">
+                        {/* Zone 1: Gamo Zone Highlands */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs font-semibold">
+                            <span className="text-slate-300">Gamo Zone Highlands (Advisory)</span>
+                            <span className="text-brand-yellow font-mono font-bold">88.5 Index</span>
+                          </div>
+                          <div className="w-full h-3 rounded-full bg-slate-950 overflow-hidden border border-slate-800/80">
+                            <div className="h-full bg-gradient-to-r from-brand-yellowDark to-brand-yellow rounded-full" style={{ width: '88.5%' }}></div>
+                          </div>
+                        </div>
+
+                        {/* Zone 2: Wolaita Zone */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs font-semibold">
+                            <span className="text-slate-300">Wolaita Zone Areas</span>
+                            <span className="text-slate-400 font-mono">54.2 Index</span>
+                          </div>
+                          <div className="w-full h-3 rounded-full bg-slate-950 overflow-hidden border border-slate-800/80">
+                            <div className="h-full bg-slate-700 rounded-full" style={{ width: '54.2%' }}></div>
+                          </div>
+                        </div>
+
+                        {/* Zone 3: Sidama Zone Highlands */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs font-semibold">
+                            <span className="text-slate-300">Sidama Highlands</span>
+                            <span className="text-slate-400 font-mono">39.0 Index</span>
+                          </div>
+                          <div className="w-full h-3 rounded-full bg-slate-950 overflow-hidden border border-slate-800/80">
+                            <div className="h-full bg-slate-700 rounded-full" style={{ width: '39%' }}></div>
+                          </div>
+                        </div>
+
+                        {/* Zone 4: East Shewa (Adama) */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs font-semibold">
+                            <span className="text-slate-300">East Shewa Plains (Clay soil saturation limit)</span>
+                            <span className="text-brand-red font-mono font-bold">94.1 Index</span>
+                          </div>
+                          <div className="w-full h-3 rounded-full bg-slate-950 overflow-hidden border border-slate-800/80">
+                            <div className="h-full bg-gradient-to-r from-brand-redDark to-brand-red rounded-full" style={{ width: '94.1%' }}></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] text-slate-500 leading-relaxed bg-slate-950/40 p-2.5 rounded-lg border border-slate-900">
+                        <strong>Susceptibility Calculation:</strong> Index combines slope angle (e.g. 35° Gamo terrain), clay soil composition, and real-time precipitation accumulation. Indexes above 80 warrant automated warning flags.
+                      </div>
+                    </div>
+
+
+<div className="flex flex-col w-full">
+  {/* Bar chart mockup */}
+  <div className="flex-1 flex items-end justify-between h-64 border border-slate-800 rounded-lg bg-slate-950/40 pl-4 pr-4 pb-2 relative mt-6 mb-4">
+    {/* Grid lines */}
+    <div className="absolute inset-y-0 left-4 right-0 flex flex-col justify-between pointer-events-none">
+      <div className="border-t border-slate-800/40 w-full h-0"></div>
+      <div className="border-t border-slate-800/40 w-full h-0"></div>
+      <div className="border-t border-slate-800/40 w-full h-0"></div>
+      <div className="border-t border-slate-800/40 w-full h-0"></div>
+    </div>
+
+    {/* Generated Bars */}
+    {[
+     { time: 'Jun 1', val: 28, level: 'normal' },
+{ time: 'Jun 2', val: 110, level: 'critical' },
+{ time: 'Jun 3', val: 15, level: 'normal' },
+{ time: 'Jun 4', val: 85, level: 'warning' },
+{ time: 'Jun 5', val: 35, level: 'normal' },
+{ time: 'Jun 6', val: 12, level: 'normal' },
+{ time: 'Jun 7', val: 100, level: 'critical' },
+{ time: 'Jun 8', val: 25, level: 'normal' },
+{ time: 'Jun 9', val: 50, level: 'warning' },
+{ time: 'Jun 10', val: 18, level: 'normal' },
+    ].map((b, idx) => (
+      <div key={idx} className="flex flex-col items-center flex-1 h-full justify-end group relative z-10 cursor-pointer">
+        {/* Value tooltip */}
+        <div className="absolute bottom-full mb-1.5 scale-0 group-hover:scale-100 transition-all duration-200 z-30 pointer-events-none">
+          <div className="bg-slate-950 border border-slate-800 text-[10px] font-bold px-2 py-1 rounded shadow-xl text-white whitespace-nowrap">
+            {b.val} mm/hr
+          </div>
+        </div>
+        
+        {/* Bar Graphic */}
+        <div 
+          className={`w-5 sm:w-7 rounded-t-sm transition-all duration-500 ${
+            b.level === 'critical' 
+              ? 'bg-gradient-to-t from-red-700 to-red-500' 
+              : b.level === 'warning' 
+              ? 'bg-gradient-to-t from-amber-600 to-amber-400'
+              : 'bg-gradient-to-t from-slate-800 to-slate-600'
+          } group-hover:brightness-125`}
+          style={{ height: `${(b.val / 130) * 100}%` }}
+        ></div>
+        
+        {/* X-Axis Time Label */}
+        <span className="text-[9px] text-slate-500 font-mono mt-1 rotate-45 md:rotate-0 whitespace-nowrap">
+          {b.time}
+        </span>
+      </div>
+    ))}
+  </div>
+
+  {/* New Legend Section Added Below */}
+  <div className="flex flex-wrap items-center justify-center gap-6 p-3 rounded-lg border border-slate-900 bg-slate-950/20 w-full mb-2">
+    {/* Normal */}
+    <div className="flex items-center gap-2">
+      <div className="w-4 h-4 rounded bg-gradient-to-t from-slate-800 to-slate-600 border border-slate-700/50"></div>
+      <span className="text-xs font-medium text-slate-400">Normal (&lt; 50 mm/hr)</span>
+    </div>
+
+    {/* Warning */}
+    <div className="flex items-center gap-2">
+      <div className="w-4 h-4 rounded bg-gradient-to-t from-amber-600 to-amber-400 border border-amber-500/30"></div>
+      <span className="text-xs font-medium text-slate-400">Warning (50–99 mm/hr)</span>
+    </div>
+
+    {/* Critical */}
+    <div className="flex items-center gap-2">
+      <div className="w-4 h-4 rounded bg-gradient-to-t from-red-700 to-red-500 border border-red-500/30"></div>
+      <span className="text-xs font-medium text-slate-400">Critical (&ge; 100 mm/hr)</span>
+    </div>
+  </div>
+</div>
+
+
+              
+
+<div className="glass-premium p-6 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-display font-bold text-base text-white">Topographic Landslide Susceptibility Index</h3>
+                        <p className="text-xs text-slate-400">Comparing active highlands zones water weight saturation vs terrain slopes</p>
+                      </div>
+
+                      <div className="space-y-4 my-6">
+                        {/* Zone 1: Gamo Zone Highlands */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs font-semibold">
+                            <span className="text-slate-300">Gamo Zone Highlands (Advisory)</span>
+                            <span className="text-brand-yellow font-mono font-bold">58 Index</span>
+                          </div>
+                          <div className="w-full h-3 rounded-full bg-slate-950 overflow-hidden border border-slate-800/80">
+                            <div className="h-full bg-gradient-to-r from-brand-yellowDark to-brand-yellow rounded-full" style={{ width: '58%' }}></div>
+                          </div>
+                        </div>
+
+                        {/* Zone 2: Wolaita Zone */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs font-semibold">
+                            <span className="text-slate-300">Wolaita Zone Areas</span>
+                            <span className="text-slate-400 font-mono">60.2 Index</span>
+                          </div>
+                          <div className="w-full h-3 rounded-full bg-slate-950 overflow-hidden border border-slate-800/80">
+                            <div className="h-full bg-slate-700 rounded-full" style={{ width: '60.2%' }}></div>
+                          </div>
+                        </div>
+
+                        {/* Zone 3: Sidama Zone Highlands */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs font-semibold">
+                            <span className="text-slate-300">Sidama Highlands</span>
+                            <span className="text-slate-400 font-mono">20.0 Index</span>
+                          </div>
+                          <div className="w-full h-3 rounded-full bg-slate-950 overflow-hidden border border-slate-800/80">
+                            <div className="h-full bg-slate-700 rounded-full" style={{ width: '20%' }}></div>
+                          </div>
+                        </div>
+
+                        {/* Zone 4: East Shewa (Adama) */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs font-semibold">
+                            <span className="text-slate-300">East Shewa Plains (Clay soil saturation limit)</span>
+                            <span className="text-brand-red font-mono font-bold">89 Index</span>
+                          </div>
+                          <div className="w-full h-3 rounded-full bg-slate-950 overflow-hidden border border-slate-800/80">
+                            <div className="h-full bg-gradient-to-r from-brand-redDark to-brand-red rounded-full" style={{ width: '89%' }}></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] text-slate-500 leading-relaxed bg-slate-950/40 p-2.5 rounded-lg border border-slate-900">
+                        <strong>Susceptibility Calculation:</strong> Index combines slope angle (e.g. 35° Gamo terrain), clay soil composition, and real-time precipitation accumulation. Indexes above 80 warrant automated warning flags.
+                      </div>
+                    </div>
+
+
+
+                  </div>
+                </div>
+              )}
+
+
+              {/* ==================== PAGE 3: ALERT APPROVALS (REFINED AUTH LOCKS) ==================== */}
+              {currentTab === 'alerts' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1">
+                  
+                  {/* Left Column: Threat Summary & Sensor Cross-Validation */}
+                  <div className="glass-premium rounded-2xl p-6 border border-slate-800 flex flex-col justify-between space-y-6">
+                    <div className="space-y-6">
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-display font-bold text-lg text-white">1. Threat Verification Telemetry</h3>
+                        <span className="bg-brand-red/10 border border-brand-red/30 text-brand-red text-xs font-bold px-3 py-1 rounded">
+                          CRITICAL RISK INDEX
+                        </span>
+                      </div>
+
+                      {/* Map location summary card */}
+                      <div className="p-4 rounded-xl bg-slate-950 border border-slate-800/80 space-y-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Active Incident Zone</span>
+                            <h4 className="text-white font-bold font-display text-base">East Shewa District, Adama Woreda</h4>
+                            <p className="text-xs text-slate-400">Telemetry feed source ID: ST_AD_774</p>
+                          </div>
+                          <span className="text-xs text-slate-400 bg-slate-900 border border-slate-800 px-2 py-1 rounded font-semibold font-mono">
+                            Cell Node Target: ~45,000 users
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-900 text-xs">
+                          <div>
+                            <span className="text-slate-500 font-medium">Crisis Type:</span>
+                            <span className="text-slate-300 font-bold block text-sm mt-0.5">🌧️ Flash Flood Surge</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 font-medium">Estimated Reach:</span>
+                            <span className="text-brand-green font-bold block text-sm mt-0.5">45,000 Nodes (Geo-Fenced)</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Core Sensor Trigger Grid */}
+                      <div className="space-y-3">
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Cross-Validation Indicators</h4>
+                        
+                        {/* Trigger 1: Rain Gauge */}
+                        <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-950 border border-slate-900">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-brand-red/10 flex items-center justify-center text-brand-red">
+                              <Icons.Rain className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-slate-300">Rainfall Accumulation Gauge</div>
+                              <div className="text-[11px] text-slate-500">Adama Radar validation node</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-extrabold text-brand-red font-mono">120 mm/hr</span>
+                            <span className="text-[10px] text-slate-500 block">Threshold: 80mm</span>
+                          </div>
+                        </div>
+
+                        {/* Trigger 2: Soil Saturation */}
+                        <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-950 border border-slate-900">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-brand-yellow/10 flex items-center justify-center text-brand-yellow">
+                              <Icons.Soil className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-slate-300">Soil Saturation Index</div>
+                              <div className="text-[11px] text-slate-500">Liquid-to-plastic limit test (Clay loam)</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-extrabold text-brand-yellow font-mono">91% Saturation</span>
+                            <span className="text-[10px] text-slate-500 block">Threshold: 85%</span>
+                          </div>
+                        </div>
+
+                        {/* Trigger 3: Crowdsourced reports */}
+                        <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-950 border border-slate-900">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-brand-green/10 flex items-center justify-center text-brand-green">
+                              <Icons.User className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-slate-300">Corroborating Crowd Reports</div>
+                              <div className="text-[11px] text-slate-500">Submissions verified via USSD portal (*444#)</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-extrabold text-brand-green font-mono">14 reports (30m)</span>
+                            <span className="text-[10px] text-slate-500 block">Threshold: 10 reports</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-slate-950 border border-slate-800/80 flex items-start gap-3">
+                      <Icons.Info className="w-5 h-5 text-brand-green shrink-0 mt-0.5" />
+                      <div className="text-xs text-slate-400 leading-relaxed">
+                        <strong className="text-slate-300 block mb-0.5">Calculated AI Confidence: 94%</strong>
+                        AI Confidence algorithm calculated a high trust score (94%) since physical telemetry streams (weather, ground sensors) and digital reports (USSD pings) correspond perfectly.
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: SMS Preview & Role-Based Actions Interface */}
+                  <div className="glass-premium rounded-2xl p-6 border border-slate-800 flex flex-col justify-between space-y-6">
+                    <div className="space-y-6">
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-display font-bold text-lg text-white">2. SMS Broadcast Control</h3>
+                        <div className="flex gap-1.5 p-1 rounded-lg bg-slate-950 border border-slate-900">
+                         
+                          <button 
+                            onClick={() => { setActiveSmsState('critical'); }}
+                            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${activeSmsState === 'critical' ? 'bg-brand-red text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                          >
+                            Critical Threat
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Language selection toggles */}
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-900">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Localization Target</span>
+                        <div className="flex gap-1 bg-slate-950 p-1 rounded-lg border border-slate-900">
+                          <button 
+                            onClick={() => { setActiveLanguage('en'); }}
+                            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${activeLanguage === 'en' ? 'bg-slate-900 text-white border border-slate-800' : 'text-slate-400 hover:text-slate-200'}`}
+                          >
+                            EN
+                          </button>
+                          <button 
+                            onClick={() => { setActiveLanguage('om'); }}
+                            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${activeLanguage === 'om' ? 'bg-slate-900 text-white border border-slate-800' : 'text-slate-400 hover:text-slate-200'}`}
+                          >
+                            OM
+                          </button>
+                           <button 
+                            onClick={() => { setActiveLanguage('am'); }}
+                            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${activeLanguage === 'am' ? 'bg-slate-900 text-white border border-slate-800' : 'text-slate-400 hover:text-slate-200'}`}
+                          >
+                            AM
+                          </button>
+                        </div>
+
+                      </div>
+
+                      {/* SMS text preview container (Completely uneditable per security request) */}
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-slate-500 font-semibold">Crisis Protected Broadcast Copy (Read-Only)</span>
+                          <span className="text-slate-500 font-semibold font-mono">
+                            {smsTexts[activeSmsState][activeLanguage].length} characters
+                          </span>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-slate-950 border border-slate-900 font-semibold text-sm leading-relaxed text-slate-300 relative group hover:border-slate-800 transition-all">
+                          <p className="select-all">{smsTexts[activeSmsState][activeLanguage]}</p>
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-[9px] font-bold text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                              Double Click to Select
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+
+
+                    {/* Operational controls buttons with role-based restriction layers */}
+                    <div className="space-y-4 pt-4 border-t border-slate-900">
+                      
+                      {/* Security Warning Banner if user cannot authorize */}
+                      {!hasBroadcastPermission && (
+                        <div className="p-3 bg-brand-red/10 border border-brand-red/25 rounded-xl flex items-start gap-2.5 text-xs text-brand-red">
+                          <Icons.Lock className="w-4 h-4 mt-0.5 shrink-0" />
+                          <div className="leading-normal">
+                            <strong>Insufficient Clearance:</strong> Your logged-in profile role is <strong>{userRole}</strong>. Message broadcasts and alert rejections require <strong>Super Admin</strong> or <strong>Admin</strong> privileges.
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex gap-3">
+                        {/* Reject & Dismiss button controlled by permissions */}
+                        <button 
+                          onClick={() => {
+                            if (!hasBroadcastPermission) return;
+                            if(confirm("Confirm dismissing this critical threat alert? This will clear sensor flags.")) {
+                              setPendingApprovalsCount(0);
+                              alert("Threat alert dismissed.");
+                            }
+                          }}
+                          disabled={!hasBroadcastPermission}
+                          className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                            hasBroadcastPermission
+                              ? 'bg-brand-red/10 hover:bg-brand-red/15 border border-brand-red/20 text-brand-red cursor-pointer'
+                              : 'bg-slate-950 border-slate-900 text-slate-600 opacity-60 cursor-not-allowed'
+                          }`}
+                        >
+                          {!hasBroadcastPermission && <Icons.Lock className="w-3.5 h-3.5" />}
+                          <span>Reject & Dismiss</span>
+                        </button>
+                      </div>
+
+                      {/* Authorize action button with role-based visual lock state */}
+                      <button 
+                        onClick={handleAuthorizeBroadcast}
+                        disabled={!hasBroadcastPermission}
+                        className={`w-full py-4 px-6 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-3 text-sm tracking-wider uppercase border text-center ${
+                          hasBroadcastPermission
+                            ? 'bg-brand-green hover:bg-brand-greenDark text-slate-950 border-brand-greenLight/20 cursor-pointer shadow-lg shadow-brand-green/20 group relative overflow-hidden active:scale-[0.99]'
+                            : 'bg-slate-900/50 border-slate-955 text-slate-500 opacity-50 cursor-not-allowed'
+                        }`}
+                      >
+                        {hasBroadcastPermission ? (
+                          <>
+                            <span className="absolute -inset-1 rounded-xl bg-brand-green/10 opacity-75 group-hover:animate-ping-slow"></span>
+                            <Icons.Send className="w-5 h-5 text-slate-950 animate-pulse-slow" />
+                            <span>AUTHORIZE BROADCAST VIA SMS Api</span>
+                          </>
+                        ) : (
+                          <>
+                            <Icons.Lock className="w-5 h-5 text-slate-500" />
+                            <span>🔒 BROADCAST LOCKED (INSUFFICIENT PERMISSIONS)</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+
+              {/* ==================== PAGE 4: SYSTEM CONFIGURATIONS ==================== */}
+              {currentTab === 'configs' && (
+                <div className="space-y-8 flex-1 flex flex-col">
+                  
+                  {/* Warning message if user has Visitor (read-only) clearance */}
+                  {userRole === 'Visitor' && (
+                    <div className="p-4 bg-brand-yellow/10 border border-brand-yellow/30 rounded-2xl flex items-start gap-3 text-xs text-brand-yellow">
+                      <Icons.Lock className="w-5 h-5 mt-0.5 shrink-0 text-brand-yellow" />
+                      <div className="leading-relaxed">
+                        <strong className="block text-sm font-semibold mb-0.5">Read-Only Observer Clearance Mode</strong>
+                        You are currently authenticated under the <strong>Visitor</strong> role. You can explore the user configurations table, but settings modifications, operator addition, operator revocation, and trigger threshold sliders are locked and disabled.
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    {/* Config Left Column: User Permission Matrix Table */}
+                    <div className="glass-premium rounded-2xl p-6 border border-slate-800 lg:col-span-2 space-y-6">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="font-display font-bold text-lg text-white">System Operator Permission Matrix</h3>
+                          <p className="text-xs text-slate-400">Credential hierarchy representing the 5 access tiers</p>
+                        </div>
+                        <span className="text-xs text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1 rounded font-mono font-semibold">
+                          Active Operators: {users.length}
+                        </span>
+                      </div>
+
+                      <div className="overflow-x-auto rounded-xl border border-slate-800">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-slate-950/80 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800">
+                              <th className="px-4 py-3">Operator Name</th>
+                              <th className="px-4 py-3">District</th>
+                              <th className="px-4 py-3">Designated Role</th>
+                              <th className="px-4 py-3">System Access Description</th>
+                              <th className="px-4 py-3 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800/80">
+                            {users.map(u => (
+                              <tr key={u.id} className="hover:bg-slate-900/40 transition-colors">
+                                <td className="px-4 py-3.5 font-bold text-white flex items-center gap-2.5">
+                                  <div className="w-7 h-7 rounded bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 font-mono text-[10px]">
+                                    OP
+                                  </div>
+                                  <span>{u.name}</span>
+                                </td>
+                                <td className="px-4 py-3.5 text-slate-400 font-medium">{u.woreda}</td>
+                                <td className="px-4 py-3.5">
+                                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded border font-semibold ${
+                                    u.role === 'Super Admin' 
+                                      ? 'bg-brand-red/10 border-brand-red/30 text-brand-red' 
+                                      : u.role === 'Admin'
+                                      ? 'bg-brand-green/10 border-brand-green/30 text-brand-green'
+                                      : u.role === 'Technical Team'
+                                      ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                                      : u.role === 'Normal User'
+                                      ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
+                                      : 'bg-slate-500/10 border-slate-500/30 text-slate-400'
+                                  }`}>
+                                    <Icons.Shield className="w-3.5 h-3.5" />
+                                    {u.role}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3.5 text-slate-400 max-w-xs truncate">{u.desc || 'No description allocated.'}</td>
+                                <td className="px-4 py-3.5 text-right">
+                                  <button 
+                                    onClick={() => {
+                                      if (userRole === 'Visitor') return;
+                                      handleDeleteUser(u.id);
+                                    }}
+                                    disabled={userRole === 'Visitor'}
+                                    className={`p-1.5 rounded-lg border transition-all ${
+                                      userRole === 'Visitor'
+                                        ? 'bg-slate-950 border-slate-900 text-slate-700 cursor-not-allowed opacity-55'
+                                        : 'bg-slate-950 border-slate-900 text-slate-500 hover:text-brand-red hover:border-brand-red/30 cursor-pointer'
+                                    }`}
+                                    title="Revoke Permission"
+                                  >
+                                    <Icons.Trash className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Config Right Column: User Addition & Threshold Settings */}
+                    <div className="space-y-6">
+                      
+                      {/* Sub-card 1: Add Operator */}
+                      <div className="glass-premium rounded-2xl p-6 border border-slate-800 space-y-4 relative">
+                        {userRole === 'Visitor' && (
+                          <div className="absolute inset-0 bg-slate-950/80 rounded-2xl flex flex-col justify-center items-center text-center p-4 z-10 backdrop-blur-xs">
+                            <Icons.Lock className="w-8 h-8 text-brand-yellow mb-2" />
+                            <h4 className="font-bold text-sm text-slate-300">Form Disabled</h4>
+                            <p className="text-[11px] text-slate-500 mt-1 max-w-[200px]">Visitor profiles cannot register system credentials.</p>
+                          </div>
+                        )}
+                        <h3 className="font-display font-bold text-base text-white flex items-center gap-2">
+                          <Icons.Plus className="w-5 h-5 text-brand-green" /> Add District Operator
+                        </h3>
+                        <form onSubmit={handleAddUser} className="space-y-3">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Username</label>
+                            <input 
+                              type="text" 
+                              required
+                              placeholder="e.g. Operator_East_Shewa" 
+                              value={newUserName}
+                              onChange={(e) => setNewUserName(e.target.value)}
+                              className="w-full bg-slate-950 text-slate-100 p-2.5 rounded-lg border border-slate-800 focus:border-brand-green focus:ring-1 focus:ring-brand-green text-xs font-semibold focus:outline-none"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Assigned District</label>
+                            <select 
+                              value={newUserWoreda}
+                              onChange={(e) => setNewUserWoreda(e.target.value)}
+                              className="w-full bg-slate-950 text-slate-100 p-2.5 rounded-lg border border-slate-800 focus:border-brand-green focus:ring-1 focus:ring-brand-green text-xs font-semibold focus:outline-none cursor-pointer"
+                            >
+                              <option value="East Shewa (Adama)">East Shewa (Adama)</option>
+                              <option value="Gamo Zone Highlands">Gamo Zone Highlands</option>
+                              <option value="Afar Region">Afar Region</option>
+                              <option value="Wolaita Zone">Wolaita Zone</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Designated Access Role</label>
+                            <select 
+                              value={newUserRole}
+                              onChange={(e) => setNewUserRole(e.target.value)}
+                              className="w-full bg-slate-950 text-slate-100 p-2.5 rounded-lg border border-slate-800 focus:border-brand-green focus:ring-1 focus:ring-brand-green text-xs font-bold focus:outline-none cursor-pointer"
+                            >
+                              <option value="Super Admin">Super Admin</option>
+                              <option value="Admin">Admin</option>
+                              <option value="Technical Team">Technical Team</option>
+                              <option value="Normal User">Normal User</option>
+                              <option value="Visitor">Visitor</option>
+                            </select>
+                          </div>
+                          <button 
+                            type="submit"
+                            className="w-full bg-brand-green hover:bg-brand-greenDark text-slate-950 py-2.5 rounded-lg font-extrabold text-xs transition-all flex items-center justify-center gap-2 mt-2 shadow-lg shadow-brand-green/10 cursor-pointer"
+                          >
+                            <Icons.Plus className="w-4 h-4 text-slate-950" />
+                            <span>Add Operator Token</span>
+                          </button>
+                        </form>
+                      </div>
+
+                      {/* Sub-card 2: System Threshold Slider Settings */}
+                      <div className="glass-premium rounded-2xl p-6 border border-slate-800 space-y-6 relative">
+                        {!hasThresholdSliderPermission && (
+                          <div className="absolute inset-0 bg-slate-950/85 rounded-2xl flex flex-col justify-center items-center text-center p-4 z-10 backdrop-blur-xs">
+                            <Icons.Lock className="w-8 h-8 text-brand-red mb-2" />
+                            <h4 className="font-bold text-sm text-slate-350">Sliders Locked</h4>
+                            <p className="text-[11px] text-slate-500 mt-1 max-w-[210px]">
+                              Threshold settings are restricted to **Super Admin** or **Technical Team** roles. Your current role is: **{userRole}**.
+                            </p>
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="font-display font-bold text-base text-white flex items-center gap-2">
+                            <span>🎚️</span> Automation Thresholds
+                          </h3>
+                          <p className="text-xs text-slate-400 mt-1">Configure parameters for automatic alert triggers</p>
+                        </div>
+                        
+                        <div className="space-y-5">
+                          {/* Slider 1: AI Confidence */}
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-xs font-semibold">
+                              <span className="text-slate-300">AI Confidence Trigger</span>
+                              <span className="text-brand-green font-mono font-bold">{aiConfidenceThreshold}%</span>
+                            </div>
+                            <input 
+                              type="range" 
+                              min="50" 
+                              max="100" 
+                              disabled={!hasThresholdSliderPermission}
+                              value={aiConfidenceThreshold}
+                              onChange={(e) => setAiConfidenceThreshold(parseInt(e.target.value))}
+                              className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-brand-green focus:outline-none disabled:opacity-40"
+                            />
+                            <div className="flex justify-between text-[9px] text-slate-500 font-mono">
+                              <span>50% (Lenient)</span>
+                              <span>100% (Strict)</span>
+                            </div>
+                          </div>
+
+                          {/* Slider 2: Minimum reports */}
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-xs font-semibold">
+                              <span className="text-slate-300">Min Corroborating Reports</span>
+                              <span className="text-brand-green font-mono font-bold">{minCrowdReports} reports</span>
+                            </div>
+                            <input 
+                              type="range" 
+                              min="3" 
+                              max="50" 
+                              disabled={!hasThresholdSliderPermission}
+                              value={minCrowdReports}
+                              onChange={(e) => setMinCrowdReports(parseInt(e.target.value))}
+                              className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-brand-green focus:outline-none disabled:opacity-40"
+                            />
+                            <div className="flex justify-between text-[9px] text-slate-500 font-mono">
+                              <span>3 reports</span>
+                              <span>50 reports</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-3 bg-slate-950/60 border border-slate-900 rounded-lg text-[10px] text-slate-500 leading-normal">
+                          <strong>Note:</strong> Sliders modulate hazard classifications across vector map networks. Adjustments apply dynamically.
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </main>
+
+          {/* ==================== MODAL: SMS BROADCAST PIPELINE SUCCESS ==================== */}
+          {showBroadcastModal && (
+            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+              <div className="glass-premium rounded-2xl max-w-lg w-full border border-slate-800 p-8 space-y-6 shadow-2xl relative">
+                
+                {/* Modal close button */}
+                {isBroadcastComplete && (
+                  <button 
+                    onClick={() => setShowBroadcastModal(false)}
+                    className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                  >
+                    <Icons.Close className="w-4.5 h-4.5" />
+                  </button>
+                )}
+
+                <div className="text-center space-y-3">
+                  {!isBroadcastComplete ? (
+                    <div className="w-16 h-16 rounded-full bg-brand-green/10 border border-brand-green/45 flex items-center justify-center mx-auto relative">
+                      <span className="absolute inset-0 rounded-full bg-brand-green/10 animate-ping-slow"></span>
+                      <Icons.Send className="w-8 h-8 text-brand-green animate-pulse-slow" />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-brand-green border-2 border-white flex items-center justify-center mx-auto shadow-lg shadow-brand-green/30">
+                      <span className="text-2xl text-slate-950 font-bold">✓</span>
+                    </div>
+                  )}
+                  
+                  <h3 className="font-display font-extrabold text-xl text-white">
+                    {!isBroadcastComplete ? "Geo-Fenced Broadcast Pipeline Active" : "Broadcast Pipelines Completed"}
+                  </h3>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                    {!isBroadcastComplete 
+                      ? "Connecting to telecom nodes to deploy geofenced warning packets to Adama..."
+                      : "The localized emergency SMS payloads have been dispatched successfully via SMS API."}
+                  </p>
+                </div>
+
+                {/* Progress Steps Timeline */}
+                <div className="space-y-4 py-4 border-t border-b border-slate-900">
+                  
+                  {/* Step 1 */}
+                  <div className="flex gap-4 items-start text-xs">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 font-bold ${
+                      broadcastStep >= 1 ? 'bg-brand-green text-slate-950 font-bold' : 'bg-slate-900 text-slate-500 border border-slate-800'
+                    }`}>
+                      {broadcastStep >= 1 ? '✓' : '1'}
+                    </div>
+                    <div>
+                      <h4 className={`font-bold ${broadcastStep >= 0 ? 'text-slate-200' : 'text-slate-500'}`}>Fetch Woreda Target Cell Towers</h4>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Identified 28 cells covering Adama district cluster.</p>
+                    </div>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="flex gap-4 items-start text-xs">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 font-bold ${
+                      broadcastStep >= 2 ? 'bg-brand-green text-slate-950 font-bold' : 'bg-slate-900 text-slate-500 border border-slate-800'
+                    }`}>
+                      {broadcastStep >= 2 ? '✓' : '2'}
+                    </div>
+                    <div>
+                      <h4 className={`font-bold ${broadcastStep >= 1 ? 'text-slate-200' : 'text-slate-500'}`}>Prepare Bilingual Message Payloads</h4>
+                      <p className="text-[10px] text-slate-500 mt-0.5">English (EN) and Afan Oromoo (OM) localized buffers loaded.</p>
+                    </div>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="flex gap-4 items-start text-xs">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 font-bold ${
+                      broadcastStep >= 3 ? 'bg-brand-green text-slate-950 font-bold' : 'bg-slate-900 text-slate-500 border border-slate-800'
+                    }`}>
+                      {broadcastStep >= 3 ? '✓' : '3'}
+                    </div>
+                    <div>
+                      <h4 className={`font-bold ${broadcastStep >= 2 ? 'text-slate-200' : 'text-slate-500'}`}>Dispatch packets to SMS API</h4>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Deploying cellular packet buffers to ~45,000 subscriber nodes.</p>
+                    </div>
+                  </div>
+
+                  {/* Step 4 */}
+                  <div className="flex gap-4 items-start text-xs">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 font-bold ${
+                      isBroadcastComplete ? 'bg-brand-green text-slate-950 font-bold' : 'bg-slate-900 text-slate-500 border border-slate-800'
+                    }`}>
+                      {isBroadcastComplete ? '✓' : '4'}
+                    </div>
+                    <div>
+                      <h4 className={`font-bold ${broadcastStep >= 3 ? 'text-slate-200' : 'text-slate-500'}`}>Verify Telecom Dispatch Handshakes</h4>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Awaiting API confirmation and SMS dispatch queue callback status.</p>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Detailed Summary details once complete */}
+                {isBroadcastComplete && (
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-900 space-y-2.5 animate-fadeIn">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-400">Total cellular targets:</span>
+                      <span className="text-white font-mono font-bold">45,182 nodes</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-400">Localized templates:</span>
+                      <span className="text-white font-mono">EN & OM (Afan Oromoo)</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-400">API Status:</span>
+                      <span className="text-brand-green font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-brand-green"></span>
+                        SUCCESS_DISPATCHED
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {isBroadcastComplete && (
+                  <button 
+                    onClick={() => setShowBroadcastModal(false)}
+                    className="w-full bg-brand-green hover:bg-brand-greenDark text-slate-950 font-bold py-3 rounded-xl transition-all shadow-lg shadow-brand-green/20 cursor-pointer text-xs"
+                  >
+                    Close & Return to Console
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    // Render the React application
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
