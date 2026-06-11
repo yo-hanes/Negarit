@@ -221,6 +221,14 @@
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
         </svg>
+<<<<<<< HEAD
+=======
+      ),
+      Menu: ({ className = "w-5 h-5", ...props }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className={className} {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+        </svg>
+>>>>>>> bd69938 (Add new updates to deployed app)
       )
     };
 
@@ -230,6 +238,10 @@
       const [userRole, setUserRole] = useState('Visitor'); // Default role
       const [loginEmail, setLoginEmail] = useState('operator@negarit.gov.et');
       const [loginPassword, setLoginPassword] = useState('••••••••');
+<<<<<<< HEAD
+=======
+      const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+>>>>>>> bd69938 (Add new updates to deployed app)
 
       // Dashboard View State
       const [currentTab, setCurrentTab] = useState('map');
@@ -805,6 +817,7 @@ if (dasenechPolygonRef.current)
 
       // ==================== MAIN DASHBOARD LAYOUT (AUTHENTICATED STATE) ====================
       return (
+<<<<<<< HEAD
         <div className="flex min-h-screen bg-brand-slateBg text-slate-100 font-sans">
           
           {/* FIXED LEFT SIDEBAR */}
@@ -823,6 +836,43 @@ if (dasenechPolygonRef.current)
                       <span className="text-[10px] font-bold text-brand-green uppercase tracking-widest">Active session</span>
                     </div>
                   </div>
+=======
+        <div className="flex min-h-screen bg-brand-slateBg text-slate-100 font-sans relative">
+          
+          {/* Sidebar Backdrop Overlay for Mobile */}
+          {isSidebarOpen && (
+            <div 
+              onClick={() => setIsSidebarOpen(false)} 
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs z-20 lg:hidden transition-opacity duration-300"
+            ></div>
+          )}
+
+          {/* FIXED LEFT SIDEBAR */}
+          <aside className={`fixed inset-y-0 left-0 w-80 bg-slate-950/95 border-r border-slate-800/80 flex flex-col justify-between backdrop-blur-xl z-30 transition-transform duration-300 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div>
+              {/* Branding Block */}
+              <div className="p-6 border-b border-slate-800/80">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-brand-green/20 flex items-center justify-center border border-brand-green/50 animate-pulse-slow">
+                      <span className="text-xl">N</span>
+                    </div>
+                    <div>
+                      <h1 className="font-display font-bold text-lg tracking-wider text-white">NEGARIT</h1>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="w-2 h-2 rounded-full bg-brand-green animate-pulse-fast"></span>
+                        <span className="text-[10px] font-bold text-brand-green uppercase tracking-widest">Active session</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white lg:hidden cursor-pointer"
+                  >
+                    <Icons.Close className="w-4 h-4" />
+                  </button>
+>>>>>>> bd69938 (Add new updates to deployed app)
                 </div>
 
                 {/* Logged in User Profile Info */}
@@ -843,7 +893,11 @@ if (dasenechPolygonRef.current)
               {/* Navigation Menu */}
               <nav className="p-4 space-y-1.5">
                 <button
+<<<<<<< HEAD
                   onClick={() => setCurrentTab('map')}
+=======
+                  onClick={() => { setCurrentTab('map'); setIsSidebarOpen(false); }}
+>>>>>>> bd69938 (Add new updates to deployed app)
                   className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl font-medium transition-all duration-300 ${
                     currentTab === 'map'
                       ? 'bg-gradient-to-r from-brand-green/20 to-slate-900 text-white border border-brand-green/30 shadow-lg shadow-brand-green/5'
@@ -858,7 +912,11 @@ if (dasenechPolygonRef.current)
                 </button>
 
                 <button
+<<<<<<< HEAD
                   onClick={() => setCurrentTab('analytics')}
+=======
+                  onClick={() => { setCurrentTab('analytics'); setIsSidebarOpen(false); }}
+>>>>>>> bd69938 (Add new updates to deployed app)
                   className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl font-medium transition-all duration-300 ${
                     currentTab === 'analytics'
                       ? 'bg-gradient-to-r from-brand-green/20 to-slate-900 text-white border border-brand-green/30 shadow-lg shadow-brand-green/5'
@@ -873,7 +931,11 @@ if (dasenechPolygonRef.current)
                 </button>
 
                 <button
+<<<<<<< HEAD
                   onClick={() => setCurrentTab('alerts')}
+=======
+                  onClick={() => { setCurrentTab('alerts'); setIsSidebarOpen(false); }}
+>>>>>>> bd69938 (Add new updates to deployed app)
                   className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl font-medium transition-all duration-300 ${
                     currentTab === 'alerts'
                       ? 'bg-gradient-to-r from-brand-green/20 to-slate-900 text-white border border-brand-green/30 shadow-lg shadow-brand-green/5'
@@ -895,7 +957,11 @@ if (dasenechPolygonRef.current)
                 </button>
 
                 <button
+<<<<<<< HEAD
                   onClick={() => setCurrentTab('configs')}
+=======
+                  onClick={() => { setCurrentTab('configs'); setIsSidebarOpen(false); }}
+>>>>>>> bd69938 (Add new updates to deployed app)
                   className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl font-medium transition-all duration-300 ${
                     currentTab === 'configs'
                       ? 'bg-gradient-to-r from-brand-green/20 to-slate-900 text-white border border-brand-green/30 shadow-lg shadow-brand-green/5'
@@ -942,6 +1008,7 @@ if (dasenechPolygonRef.current)
           </aside>
 
           {/* MAIN CONTENT VIEWPORT */}
+<<<<<<< HEAD
           <main className="flex-1 pl-80 min-h-screen flex flex-col">
             
             {/* Header Area */}
@@ -965,12 +1032,56 @@ if (dasenechPolygonRef.current)
                 <div className="glass px-3.5 py-1.5 rounded-lg flex items-center gap-2 border border-slate-800">
                   <span className="w-2.5 h-2.5 rounded-full bg-brand-yellow"></span>
                   <span className="text-xs font-semibold text-slate-300">1 Advisory Alert (Gamo)</span>
+=======
+          <main className="flex-1 lg:pl-80 min-h-screen flex flex-col transition-all duration-300">
+            
+            {/* Header Area */}
+            <header className="sticky top-0 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-8 py-4 sm:py-5 flex justify-between items-center z-10">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="p-2 -ml-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white lg:hidden cursor-pointer flex items-center justify-center"
+                  aria-label="Open Sidebar"
+                >
+                  <Icons.Menu className="w-5 h-5" />
+                </button>
+                <div>
+                  <span className="text-[10px] sm:text-xs font-bold text-brand-green uppercase tracking-widest">Negarit Command Core</span>
+                  <h2 className="font-display font-bold text-sm sm:text-lg md:text-2xl text-white mt-0.5 font-semibold">
+                    {currentTab === 'map' && "Disaster Risk Mapping"}
+                    {currentTab === 'analytics' && "Analytics Dashboard"}
+                    {currentTab === 'alerts' && "SMS Broadcast Authorization"}
+                    {currentTab === 'configs' && "System Configuration"}
+                  </h2>
+                </div>
+              </div>
+
+              {/* Global Indicators */}
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="glass px-2 sm:px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 sm:gap-2 border border-slate-800">
+                  <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-brand-red animate-pulse-fast"></span>
+                  <span className="text-[9px] sm:text-xs font-semibold text-slate-300">
+                    <span className="hidden sm:inline">1 Active Critical Threat (Adama)</span>
+                    <span className="sm:hidden">1 Critical</span>
+                  </span>
+                </div>
+                <div className="glass px-2 sm:px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 sm:gap-2 border border-slate-800">
+                  <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-brand-yellow"></span>
+                  <span className="text-[9px] sm:text-xs font-semibold text-slate-300">
+                    <span className="hidden sm:inline">1 Advisory Alert (Gamo)</span>
+                    <span className="sm:hidden">1 Advisory</span>
+                  </span>
+>>>>>>> bd69938 (Add new updates to deployed app)
                 </div>
               </div>
             </header>
 
             {/* Content Switcher */}
+<<<<<<< HEAD
             <div className="p-8 flex-1 flex flex-col">
+=======
+            <div className="p-4 sm:p-8 flex-1 flex flex-col">
+>>>>>>> bd69938 (Add new updates to deployed app)
                   
               {/* ==================== PAGE 1: INTERACTIVE RISK MAP (LEAFLET REAL MAP) ==================== */}
               {/* Note: We keep this block mounted in DOM but hide it so Leaflet's instance is preserved */}
